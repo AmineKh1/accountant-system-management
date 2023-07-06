@@ -1,0 +1,76 @@
+path : /tva/check where tva never declarer then send data to /tva/create
+: /tva/chiffre add chiffre affaire then send it to /check if tva not declarer or send data to /createDetail if tva aleardy declared, 
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------
+
+
+         async payerTva(data: PaimentTvaDto, id: number) {
+        try {
+            data.userId = id;
+            const paieTva = await this.prisma.paimentTva.create({
+                data,
+                include: {
+                    tva: true,
+                }
+            })
+            const detailsTva = await this.prisma.detailpaiments.findMany({
+                select: {
+                    annee: true,
+                    ht: true,
+                    ttc: true,
+                    PaimentsPerMouth: true,
+                },
+                where: {
+                    tvaId: data.tvaId,
+                }
+            })
+            let calcul: number = paieTva.price;
+            let cal: number;
+            let cridit: number = 0;
+            detailsTva.forEach(el => {
+                el.PaimentsPerMouth.forEach(ele => {
+                    cal = el.ht + el.ttc;
+                    if (calcul >= cal)
+                        ele.payer = true;
+                    calcul = calcul - cal;
+                    if (ele.payer == false)
+                        cridit = cridit + cal;
+                });
+            });
+            const updated = await this.prisma.credit_details.update({
+                where: {
+                    entrepriseId: paieTva.tva.entrepriseId,
+                },
+                data: {
+                    restTva: cridit,
+                }
+            })
+            return updated;
+        }
+        catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+                throw new HttpException(error.meta.cause, HttpStatus.FORBIDDEN)
+            }
+        }
+    }
+
+
+
+npm install --legacy-peer-deps
+
+
+
+
+path upgrade clienty to entreprise : '/toentreprise"

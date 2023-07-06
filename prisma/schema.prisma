@@ -1,0 +1,171 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity", "interactiveTransactions"]
+}
+
+datasource db {
+  provider             = "mysql"
+  url                  = env("DATABASE_URL")
+  referentialIntegrity = "prisma"
+}
+
+enum Role {
+  EMPLOY_SENIOR
+  EMPLOY_JUNIOR
+  ADMIN
+  STAGIAIRE
+}
+
+model User {
+  id             Int              @id @default(autoincrement())
+  dateCreation   DateTime         @default(now())
+  dateUpdate     DateTime         @updatedAt
+  email          String           @unique
+  name           String?
+  password       String
+  role           Role
+  Prospect       Prospect[]
+  chiffreAffaire chiffreAffaire[]
+  paimentTva     paimentTva[]
+  Tva            Tva[]
+  Entreprise     Entreprise[]
+  Detailpaiments Detailpaiments[]
+}
+
+enum OrigineFonds {
+  ContratBail
+  Domiciliation
+}
+
+model Prospect {
+  id              Int      @id @default(autoincrement())
+  name            String   @unique
+  nameResponsable String
+  telephone       String
+  dateEngagement  DateTime @default(now())
+  dateUpdate      DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id])
+  userId          Int
+}
+
+model chiffreAffaire {
+  id           Int        @id @default(autoincrement())
+  dateAjeute   DateTime   @default(now())
+  dateUpdate   DateTime   @updatedAt
+  annee        Int
+  price        Float
+  entreprise   Entreprise @relation(fields: [idEntreprise], references: [id])
+  idEntreprise Int
+  user         User       @relation(fields: [userId], references: [id])
+  userId       Int
+
+  @@unique([idEntreprise, annee])
+}
+
+enum Diposer {
+  DIPOSER
+  NO_DIPOSER
+  EN_COURS
+}
+
+model PaimentsPerMouth {
+  id               Int            @id @default(autoincrement())
+  dateCreation     DateTime       @default(now())
+  dateUpdate       DateTime       @updatedAt
+  mounth           Int
+  payer            Boolean
+  diposer          Diposer
+  detailsPaiments  Detailpaiments @relation(fields: [detailpaimentsId], references: [id])
+  detailpaimentsId Int
+}
+
+model Detailpaiments {
+  id               Int                @id @default(autoincrement())
+  dateCreation     DateTime           @default(now())
+  dateUpdate       DateTime           @updatedAt
+  annee            Int
+  ht               Float
+  ttc              Float
+  remiseMad        Float
+  remisepours      Float
+  trimensual       Boolean
+  Tva              Tva                @relation(fields: [tvaId], references: [id])
+  tvaId            Int
+  PaimentsPerMouth PaimentsPerMouth[]
+  user             User               @relation(fields: [userId], references: [id])
+  userId           Int
+}
+
+model Credit_details {
+  id             Int        @id @default(autoincrement())
+  dateCreation   DateTime   @default(now())
+  dateUpdate     DateTime   @updatedAt
+  criditancienne Float
+  restTva        Float
+  restCnss       Float
+  restEtat9421   Float
+  restCreation   Float
+  entreprise     Entreprise @relation(fields: [entrepriseId], references: [id])
+  entrepriseId   Int        @unique
+}
+
+model paimentTva {
+  id          Int      @id @default(autoincrement())
+  datePaiment DateTime @default(now())
+  price       Float
+  tva         Tva      @relation(fields: [tvaId], references: [id])
+  tvaId       Int
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int
+}
+
+model Tva {
+  id                  Int              @id @default(autoincrement())
+  dateCreationDossier DateTime         @default(now())
+  dateDebutDossier    DateTime
+  dateMiseajour       DateTime         @updatedAt
+  detailpaiments      Detailpaiments[]
+  entreprise          Entreprise       @relation(fields: [entrepriseId], references: [id])
+  entrepriseId        Int              @unique
+  paimentTva          paimentTva[]
+  user                User             @relation(fields: [userId], references: [id])
+  userId              Int
+}
+
+enum TypeClients {
+  VIP
+  NORMAL
+}
+
+model Entreprise {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  nameResponsable String
+  chiffreAffaire  chiffreAffaire[]
+  telephone       String
+  dateEngagement  DateTime
+  typeClients     TypeClients      @default(NORMAL)
+  adress          String
+  originefonds    OrigineFonds
+  dateCreationIn  DateTime         @default(now())
+  dateCreation    DateTime
+  dateUpdate      DateTime         @updatedAt
+  tribunal        String?
+  codeAcces       String?
+  MdpAdhesion     String?
+  loginDgi        String?
+  mdpDgi          String?
+  loginDamancom   String?
+  mdpDamancom     String?
+  ice             String?
+  if              String?
+  rc              String?
+  cnss            String?
+  Tva             Tva?
+  Credit_details  Credit_details?
+  user            User             @relation(fields: [userId], references: [id])
+  userId          Int
+}
